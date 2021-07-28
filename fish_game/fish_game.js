@@ -44,6 +44,11 @@ canvas.addEventListener('mouseup', function(){
 });
 
 //Create PLAYER
+const playerLeft = new Image();
+playerLeft.src = '../fish_game/used_sprites/yellow_fish_swim_left.png';
+const playerRight = new Image();
+playerRight.src = '../fish_game/used_sprites/yellow_fish_swim_right.png';
+
 class Player{
     constructor(){
         //this.x and this.y will have the coordinates given at the creation of variable "mouse", till we click the canvas
@@ -54,13 +59,18 @@ class Player{
         this.frameX = 0; //currently displayed frames
         this.frameY = 0;
         this.frame = 0;
-        this.spriteWidth = 498; //depends on the spritesheet dimensions
-        this.spriteHeight = 327; //depends on the spritesheet dimensions
+        this.spriteWidth = 418; //depends on the spritesheet dimensions (look at sprite we have 4 fish on the line, so divide img width by 4 to get this number, same with height look at number of fish on height)
+        this.spriteHeight = 397; //depends on the spritesheet dimensions
     }
 
     update(){
         const dx = this.x - mouse.x; //x-distance between player and mouseClick
         const dy = this.y - mouse.y; //y-distance between player and mouseClick
+        
+        //calculate the angle rotation for the fish
+        let theta = Math.atan2(dy, dx);
+        this.angle = theta;
+
         if(mouse.x != this.x){
             this.x -= dx/20; //divide by a number so player doesn't jump
             //directly to mouse x, but "moves towards it".
@@ -85,6 +95,27 @@ class Player{
         ctx.fill(); //draw circle
         ctx.closePath();
         ctx.fillRect(this.x, this.y, this.radius, 10);
+
+        //this.x & this.y you adjust them so the fish will be on top of
+        //the red circle, depends by case, try and readjust
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        //in the if statement we changed this.x & this.y by 0, since
+        //they are reflected in the ctx.translate(this.x, this.y); call above
+        if(this.x >= mouse.x){
+        ctx.drawImage(playerLeft, this.frameX * this.spriteWidth, 
+            this.frameY * this.spriteHeight, this.spriteWidth, 
+            this.spriteHeight, /*this.x*/ 0 - 50, /*this.y*/ 0 -50 , this.spriteWidth/4, 
+            this.spriteHeight/4);
+        }else{
+            ctx.drawImage(playerRight, this.frameX * this.spriteWidth, 
+                this.frameY * this.spriteHeight, this.spriteWidth, 
+                this.spriteHeight, /*this.x*/ 0 - 50, /*this.y*/ 0 -50 , this.spriteWidth/4, 
+                this.spriteHeight/4);
+        }
+        ctx.restore();
     }
 }
 
@@ -120,10 +151,10 @@ class Bubble{
     }
 }
 
-const bubblePop1 = document.createElement('audio');
-bubblePop1.src = 'Plop.ogg';
+let bubblePop1 = document.createElement(`audio`);
+bubblePop1.src = '../fish_game/sounds/Plop.ogg'; //entire path, since this would be like it would be in index.html
 const bubblePop2 = document.createElement('audio');
-bubblePop2.src = 'bubbles-single1.wav';
+bubblePop2.src = '../fish_game/sounds/bubbles-single1.wav';
 
 function handleBubble(){
     //every 50 frames add a bubble
@@ -140,18 +171,20 @@ function handleBubble(){
                 bubblesArray.splice(i, 1);
             },0);
         }
-        if(bubblesArray[i].distance <bubblesArray[i].radius + player.radius){
-            if(!bubblesArray[i].counted){
-                if(bubblesArray[i].sound == 'sound1'){
-                    bubblePop1.play();
-                }else{
-                    bubblePop2.play();
+        if(bubblesArray[i]){
+            if(bubblesArray[i].distance <bubblesArray[i].radius + player.radius){
+                if(!bubblesArray[i].counted){
+                    if(bubblesArray[i].sound == 'sound1'){
+                        bubblePop1.play();
+                    }else{
+                        bubblePop2.play();
+                    }
+                    score++;
+                    bubblesArray[i].counted = true;
+                    setTimeout( ()=>{
+                        bubblesArray.splice(i, 1);
+                    },0);
                 }
-                score++;
-                bubblesArray[i].counted = true;
-                setTimeout( ()=>{
-                    bubblesArray.splice(i, 1);
-                },0);
             }
         }
     }
