@@ -9,7 +9,9 @@ canvas.height = 500;
 
 let score = 0;
 let gameFrame = 0; //use it to add periodic events to the game
-ctx.font = '50px Georgia';
+ctx.font = '40px Georgia';
+let gameSpeed = 1;
+let gameOver = false;
 
 
 //Create a variable to get the bounds of the canvas
@@ -79,6 +81,28 @@ class Player{
             this.y -= dy/20;
         }
 
+        //ANIMATE the enemy, to look like he swims
+        if(gameFrame % 5 == 0){
+            this.frame++;
+            if(this.frame >= 12){
+                this.frame = 0;
+            }
+            if(this.frame == 3 || this.frame == 7 || this.frame ==11){
+                this.frameX = 0;
+            } else{
+                this.frameX++;
+            }
+            if(this.frame < 3){
+                this.frameY = 0;
+            } else if(this.frame < 7){
+                this.frameY = 1;
+            } else if(this.frame < 11){
+                this.frameY = 2;
+            } else{
+                this.frameY = 0;
+            }
+        }        
+
     }
 
     draw(){
@@ -89,13 +113,14 @@ class Player{
             ctx.lineTo(mouse.x, mouse.y); //end point of the line
             ctx.stroke(); //connect the start-end points
         }
+        /* REPLACED by playerImage 
         ctx.fillStyle = 'red'; //player color
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); //draw a circle
         ctx.fill(); //draw circle
         ctx.closePath();
         ctx.fillRect(this.x, this.y, this.radius, 10);
-
+        */
         //this.x & this.y you adjust them so the fish will be on top of
         //the red circle, depends by case, try and readjust
         ctx.save();
@@ -123,6 +148,9 @@ const player = new Player();
 
 //Create Water Bubbles
 const bubblesArray = [];
+const bubbleImage = new Image();
+bubbleImage.src = '../fish_game/used_sprites/buble_pop_two_01.png';
+
 class Bubble{
     constructor(){
         this.x = Math.random() * canvas.width;
@@ -142,12 +170,16 @@ class Bubble{
     }
 
     draw(){
+        /*
+        COMMENT THIS, IT has been replaced with bubbleImage
         ctx.fillStyle = 'blue';
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
         ctx.fill();
         ctx.closePath();
         ctx.stroke();
+        */
+        ctx.drawImage(bubbleImage, this.x - 70, this.y -70, this.radius * 2.8, this.radius * 2.8);
     }
 }
 
@@ -170,9 +202,7 @@ function handleBubble(){
             setTimeout( ()=>{
                 bubblesArray.splice(i, 1);
             },0);
-        }
-        if(bubblesArray[i]){
-            if(bubblesArray[i].distance <bubblesArray[i].radius + player.radius){
+        } else if(bubblesArray[i].distance <bubblesArray[i].radius + player.radius){
                 if(!bubblesArray[i].counted){
                     if(bubblesArray[i].sound == 'sound1'){
                         bubblePop1.play();
@@ -186,21 +216,135 @@ function handleBubble(){
                     },0);
                 }
             }
+    }   
+}
+
+//set image background
+//Repeating backgrounds
+const background = new Image();
+background.src = '../fish_game/images/background1.png';
+
+const BG = {
+    x1:0,
+    x2:canvas.width,
+    y: 0,
+    width:canvas.width,
+    height:canvas.height
+}
+
+function handleBackground(){
+    BG.x1 -=gameSpeed;
+    if(BG.x1 < -BG.width){
+        BG.x1 = BG.width;
+    }
+
+    BG.x2 -=gameSpeed;
+    if(BG.x2 < -BG.width){
+        BG.x2 = BG.width;
+    }
+
+    ctx.drawImage(background, BG.x1, BG.y, BG.width, BG.height);
+    ctx.drawImage(background, BG.x2, BG.y, BG.width, BG.height);
+}
+
+//create enemies
+const enemyImage = new Image();
+enemyImage.src = '../fish_game/used_sprites/red_fish_swim_left.png';
+
+class Enemy{
+    constructor(){
+        this.x = canvas.width + 200;
+        this.y = Math.random() * (canvas.height - 150) + 90;
+        this.radius = 50;
+        this.speed = Math.random() * 2 + 2;
+        this.frame = 0;
+        this.frameX = 0;
+        this.frameY = 0;
+        this.spriteWidth = 418;
+        this.spriteHeight = 397;
+    }
+
+    draw(){
+        /* PLACED BY enemyIMAGE
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0 , Math.PI * 2);
+        ctx.fill();
+        */
+        ctx.drawImage(enemyImage, this.frameX * this.spriteWidth, this.frameY * this.spriteHeight, this.spriteWidth, this.spriteHeight, this.x - 50, this.y - 50, this.spriteWidth/4, this.spriteHeight/4);
+    }
+
+    update(){
+        this.x -= this.speed;
+        if(this.x < 0 - this.radius * 2){
+            this.x = canvas.width + 200;
+            this.y = Math.random() * (canvas.height - 150) + 90;
+            this.speed = Math.random() * 2 + 2;
+        }
+
+        //ANIMATE the enemy, to look like he swims
+        if(gameFrame % 5 == 0){
+            this.frame++;
+            if(this.frame >= 12){
+                this.frame = 0;
+            }
+            if(this.frame == 3 || this.frame == 7 || this.frame ==11){
+                this.frameX = 0;
+            } else{
+                this.frameX++;
+            }
+            if(this.frame < 3){
+                this.frameY = 0;
+            } else if(this.frame < 7){
+                this.frameY = 1;
+            } else if(this.frame < 11){
+                this.frameY = 2;
+            } else{
+                this.frameY = 0;
+            }
+        }
+
+        //collision with player
+        const dx = this.x - player.x;
+        const dy = this.y - player.y;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+        if(distance < this.radius + player.radius){
+            handleGameOver();
         }
     }
-    
+}
+
+const enemy1 = new Enemy();
+function handleEnemies(){
+    enemy1.draw();
+    enemy1.update();
+}
+
+function handleGameOver(){
+    ctx.fillStyle = 'white';
+    ctx.fillText('GAME OVER, you reached score:' + score, 130, 250);
+    gameOver = true;
 }
 
 //Animate
 function animate(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    handleBackground();
     handleBubble();
     player.update();
     player.draw();
+    handleEnemies();
     ctx.fillStyle = 'black'
     ctx.fillText('score: ' + score, 10, 50);
     gameFrame++;
-    requestAnimationFrame(animate);
+    if(!gameOver){
+        requestAnimationFrame(animate);
+    }
 }
 //console.log(ctx);
 animate();
+
+//fix issue with mouse position when resizing browser
+window.addEventListener('resize', function(){
+    canvasPosition = canvas.getBoundingClientRect();
+});
